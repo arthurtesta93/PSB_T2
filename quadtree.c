@@ -8,6 +8,10 @@
 #include <GL/gl.h>     /* OpenGL functions */
 #endif
 
+float RED_FACTOR = 0.3;
+float GREEN_FACTOR = 0.59;
+float BLUE_FACTOR = 0.11;
+
 unsigned int first = 1;
 char desenhaBorda = 1;
 
@@ -30,7 +34,7 @@ QuadNode *geraQuadtree(Img* pic, float minError)
     RGBPixel (*pixels)[pic->width] = (RGBPixel(*)[pic->height]) pic->img;
 
     // Veja como acessar os primeiros 10 pixels da imagem, por exemplo:
-    int i;
+    int i,j;
     for(i=0; i<10; i++)
         printf("%02X %02X %02X\n",pixels[0][i].r,pixels[1][i].g,pixels[2][i].b);
 
@@ -40,7 +44,23 @@ QuadNode *geraQuadtree(Img* pic, float minError)
     //////////////////////////////////////////////////////////////////////////
     // Implemente aqui o algoritmo que gera a quadtree, retornando o nodo raiz
     //////////////////////////////////////////////////////////////////////////
+    
+    GrayscaleImg *p = malloc(sizeof(GrayscaleImg) * (width * height));
+    
+    for (i=0; i<height; i++)
+    {
+        for(j=0; j<width; j++)
+        {
+            
+            printf("\nBLUE %d \n RED %d \n GREEN %d\n", pic->img->b, pic->img->r, pic->img->g);
+            char intensity = (char)(pic->img->b * BLUE_FACTOR) + (pic->img->r * RED_FACTOR) + (pic->img->g * GREEN_FACTOR);
 
+            printf("\nGRAY: %d\n", intensity);
+
+            p[j].grayPix = &intensity;
+
+        }
+    }
 // COMENTE a linha abaixo quando seu algoritmo ja estiver funcionando
 // Caso contrario, ele ira gerar uma arvore de teste com 3 nodos
 
