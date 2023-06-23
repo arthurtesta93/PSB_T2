@@ -104,6 +104,9 @@ void keyboard(unsigned char key, int x, int y)
         erro--;
         changed=1;
     }
+    if(key=='g') {
+        printf("hello grayscale");
+    }
 
     // 'b' liga/desliga o desenho das bordas de cada região
     if(key=='b') {

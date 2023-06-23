@@ -44,27 +44,37 @@ QuadNode *geraQuadtree(Img* pic, float minError)
     //////////////////////////////////////////////////////////////////////////
     // Implemente aqui o algoritmo que gera a quadtree, retornando o nodo raiz
     //////////////////////////////////////////////////////////////////////////
+
     
-    GrayscaleImg *p = malloc(sizeof(GrayscaleImg) * (width * height));
-    
+
     for (i=0; i<height; i++)
     {
         for(j=0; j<width; j++)
         {
+
+            printf("%02X %02X %02X\n",pixels[i][j].r,pixels[i][j].g,pixels[i][j].b);
+
             
             printf("\nBLUE %d \n RED %d \n GREEN %d\n", pic->img->b, pic->img->r, pic->img->g);
-            char intensity = (char)(pic->img->b * BLUE_FACTOR) + (pic->img->r * RED_FACTOR) + (pic->img->g * GREEN_FACTOR);
+            //int intensity = (pic->img->b * BLUE_FACTOR) + (pic->img->r * RED_FACTOR) + (pic->img->g * GREEN_FACTOR);
+
+            int intensity = (pixels[i][j].r * BLUE_FACTOR) + (pixels[i][j].g * RED_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
 
             printf("\nGRAY: %d\n", intensity);
 
-            p[j].grayPix = &intensity;
+            pixels[i][j].r = intensity;
+            pixels[i][j].g = intensity;
+            pixels[i][j].b = intensity;
 
         }
     }
+
+    
+    
 // COMENTE a linha abaixo quando seu algoritmo ja estiver funcionando
 // Caso contrario, ele ira gerar uma arvore de teste com 3 nodos
 
-#define DEMO
+//#define DEMO
 #ifdef DEMO
 
     /************************************************************/
@@ -100,7 +110,7 @@ QuadNode *geraQuadtree(Img* pic, float minError)
 
 #endif
     // Finalmente, retorna a raiz da árvore
-    return raiz;
+//    return raiz;
 }
 
 // Limpa a memória ocupada pela árvore

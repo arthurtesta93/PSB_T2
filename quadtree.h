@@ -28,13 +28,6 @@ typedef struct {
     RGBPixel *img;
 } Img;
 
-
-typedef struct {
-    int width, height;
-    char *grayPix;
-} GrayscaleImg;
-
-
 typedef struct Quad QuadNode;
 
 QuadNode *geraQuadtree(Img* img, float minDetail);
