@@ -45,7 +45,13 @@ QuadNode *geraQuadtree(Img* pic, float minError)
     // Implemente aqui o algoritmo que gera a quadtree, retornando o nodo raiz
     //////////////////////////////////////////////////////////////////////////
 
-    int histogram[256];
+    unsigned int histogram[256];
+
+    for (i=0; i<256; i++)
+    {
+        histogram[i] = 0;
+    }
+
 
     for (i=0; i<height; i++)
     {
@@ -54,18 +60,12 @@ QuadNode *geraQuadtree(Img* pic, float minError)
             
             printf("\nBLUE %d \n RED %d \n GREEN %d\n", pixels[i][j].r, pixels[i][j].g, pixels[i][j].b);
 
-            int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
+            unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
 
             printf("\nGRAY: %d\n", intensity);
 
-            if (histogram[intensity] == 0) 
-            {
-                histogram[intensity] = 1;
-            }
-            else
-            {
-                histogram[intensity] += 1;
-            }
+            histogram[intensity] += 1;
+            printf("HISTOGRAM: \nindex: %d\n frequency: %d\n", intensity, histogram[intensity]);
         }
     }
 
