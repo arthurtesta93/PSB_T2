@@ -1,6 +1,7 @@
 #include "quadtree.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
@@ -69,11 +70,101 @@ QuadNode *geraQuadtree(Img* pic, float minError)
         }
     }
 
+    // calcular intensidade do quadrante Para tanto, 
+    //deve-se fazer um somatório de cada entrada do histograma multiplicada por sua frequência. A
+    //seguir, divide-se essa soma pelo total de pixels da região.
+
+    unsigned int totalPixels = width * height;
+    unsigned int soma = 0;
+
+    for (i=0; i<256; i++)
+    {
+        soma += histogram[i] * i;
+    }
+
+    float intensidadeMedia = soma / totalPixels;
+
+    printf("Intensidade Media: %f\n", intensidadeMedia);
+
+    float erro = 0;
+
+    for (i=0; i<width; i++)
+    {
+        for(j=0; j<height; j++)
+        {
+            unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
+            erro += pow((intensity - intensidadeMedia),2);
+        }
+    }
+
+    erro = sqrt((1/totalPixels) * erro);
+
+    printf("Erro: %f\n", erro);
+
+ /*    if (erro <= minError)
+    {
+        printf("Erro menor que minimo (mínimo: %f)\n", minError);
+        return newNode(0,0,width,height);
+    } */
+
+
+    QuadNode *raiz = newNode(0,0,width,height);
+    raiz->status = PARCIAL;
+    raiz->color[0] = 0;
+    raiz->color[1] = 0;
+    raiz->color[2] = 255;
+
+    int meiaLargura = width/2;
+    int meiaAltura = height/2;
+    
+
+    QuadNode *nw = newNode(meiaLargura, 0, meiaLargura, meiaAltura);
+    nw->status = PARCIAL;
+    nw->color[0] = 0;
+    nw->color[1] = 0;
+    nw->color[2] = 255;
+
+    raiz->NW = nw;
+
+
+    //create the ne node
+
+    QuadNode *ne = newNode(0, 0, meiaLargura, meiaAltura);
+    ne->status = PARCIAL;
+    ne->color[0] = 0;
+    ne->color[1] = 0;
+    ne->color[2] = 255;
+
+    raiz->NE = ne;
+
+    //create the sw node
+
+    QuadNode *sw = newNode(0, meiaAltura, meiaLargura, meiaAltura);
+    sw->status = PARCIAL;
+    sw->color[0] = 0;
+    sw->color[1] = 0;
+    sw->color[2] = 255;
+
+    raiz->SW = sw;
+
+    //create the se node
+
+    QuadNode *se = newNode(meiaLargura, meiaAltura, meiaLargura, meiaAltura);
+    se->status = PARCIAL;
+    se->color[0] = 0;
+    se->color[1] = 0;
+    se->color[2] = 255;
+
+    raiz->SE = se;
+
+    return raiz;
+}
+
 
 // COMENTE a linha abaixo quando seu algoritmo ja estiver funcionando
 // Caso contrario, ele ira gerar uma arvore de teste com 3 nodos
 
-#define DEMO
+//#define DEMO
 #ifdef DEMO
 
     /************************************************************/
@@ -109,8 +200,6 @@ QuadNode *geraQuadtree(Img* pic, float minError)
 
 #endif
     // Finalmente, retorna a raiz da árvore
-    return raiz;
-}
 
 // Limpa a memória ocupada pela árvore
 void clearTree(QuadNode *n)
