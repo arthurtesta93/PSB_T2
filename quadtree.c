@@ -31,9 +31,12 @@ QuadNode *newNode(int x, int y, int width, int height)
 
 // chamada recursiva para desenhar a quadtree
 
-QuadNode *desenhaQuadtree(QuadNode *n, float minError, RGBPixel (*pixels)[(int)n->width])
-{   
-    printf("ID: %d \n", n->id);
+QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
+{
+    // printf("ID: %d \n", n->id);
+    
+    RGBPixel(*pixels)[pic->width] = (RGBPixel(*)[pic->height])pic->img;
+
     if (n == NULL)
         return NULL;
 
@@ -46,6 +49,7 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, RGBPixel (*pixels)[(int)n
         float meiaLargura = n->width / 2;
         float meiaAltura = n->height / 2;
 
+        unsigned int totalPixels = n->width * n->height;
         int i, j;
 
         // calcula a cor média da região
@@ -94,42 +98,52 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, RGBPixel (*pixels)[(int)n
         // calcula intensidade média do quadrante utilizando o histograma
 
         unsigned int soma = 0;
-        unsigned int totalPixels = n->width * n->height;
 
         for (i = 0; i < 256; i++)
         {
             soma += histogram[i] * i;
         }
 
-        unsigned int media = soma / totalPixels;
+        int intensidadeMedia = soma / totalPixels;
 
-        // calcula o erro
+        n->color[0] = mediaR;
+        n->color[1] = mediaG;
+        n->color[2] = mediaB;
+        // Calculo do erro conforme fórmula da seção 3.3
+        long double erro = 0;
 
-        float erro = 0;
-
-        for (i = 0; i < 256; i++)
+        for (i = 0; i < n->width; i++)
         {
-            erro += histogram[i] * pow((i - media), 2);
+            for (j = 0; j < n->height; j++)
+            {
+                unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
+                erro += pow((intensity - intensidadeMedia), 2);
+            }
         }
 
-        erro = erro / totalPixels;
+        long double totalPixelsDividido = 1.00000000 / totalPixels;
 
-        // se o erro for menor que o erro mínimo, então o quadrante é homogêneo
+        long double totalPixelsVezesErro = totalPixelsDividido * erro;
 
+        long double erroRegiao = sqrt(totalPixelsVezesErro);
+
+        // printf("erro regiao: %Lf \n", erroRegiao);
         if (erro < minError)
         {
+            // printf("Chegou ao erro minimo! %Lf  minErro %f \n", erro, minError);
             n->color[0] = mediaR;
             n->color[1] = mediaG;
             n->color[2] = mediaB;
-
+            n->status = CHEIO;
             return n;
         }
         else
         {
-            n->NW = desenhaQuadtree(newNode(n->x, n->y, meiaLargura, meiaAltura), minError, pixels);
-            n->NE = desenhaQuadtree(newNode(n->x + meiaLargura, n->y, meiaLargura, meiaAltura), minError, pixels);
-            n->SW = desenhaQuadtree(newNode(n->x, n->y + meiaAltura, meiaLargura, meiaAltura), minError, pixels);
-            n->SE = desenhaQuadtree(newNode(n->x + meiaLargura, n->y + meiaAltura, meiaLargura, meiaAltura), minError, pixels);
+            n->status = PARCIAL;
+            n->NW = desenhaQuadtree(newNode(n->x, n->y, meiaLargura, meiaAltura), minError, pic);
+            n->NE = desenhaQuadtree(newNode(n->x + meiaLargura, n->y, meiaLargura, meiaAltura), minError, pic);
+            n->SW = desenhaQuadtree(newNode(n->x, n->y + meiaAltura, meiaLargura, meiaAltura), minError, pic);
+            n->SE = desenhaQuadtree(newNode(n->x + meiaLargura, n->y + meiaAltura, meiaLargura, meiaAltura), minError, pic);
         }
 
         return n;
@@ -288,10 +302,10 @@ QuadNode *geraQuadtree(Img *pic, float minError)
 
         // chamada recursiva para cada quadrante
 
-        raiz->NW = desenhaQuadtree(nw, minError, pixels);
-        raiz->NE = desenhaQuadtree(ne, minError, pixels);
-        raiz->SW = desenhaQuadtree(sw, minError, pixels);
-        raiz->SE = desenhaQuadtree(se, minError, pixels);
+        raiz->NW = desenhaQuadtree(nw, minError, pic);
+        raiz->NE = desenhaQuadtree(ne, minError, pic);
+        raiz->SW = desenhaQuadtree(sw, minError, pic);
+        raiz->SE = desenhaQuadtree(se, minError, pic);
     }
     return raiz;
 }
