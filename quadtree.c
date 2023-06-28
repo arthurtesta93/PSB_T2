@@ -29,6 +29,113 @@ QuadNode *newNode(int x, int y, int width, int height)
     return n;
 }
 
+// chamada recursiva para desenhar a quadtree
+
+QuadNode *desenhaQuadtree(QuadNode *n, float minError, RGBPixel (*pixels)[(int)n->width])
+{   
+    printf("ID: %d \n", n->id);
+    if (n == NULL)
+        return NULL;
+
+    if (minError == 0)
+    {
+        return newNode(0, 0, n->width, n->height);
+    }
+    else
+    {
+        float meiaLargura = n->width / 2;
+        float meiaAltura = n->height / 2;
+
+        int i, j;
+
+        // calcula a cor média da região
+
+        int mediaR = 0;
+        int mediaG = 0;
+        int mediaB = 0;
+
+        for (i = n->x; i < n->x + n->width; i++)
+        {
+            for (j = n->y; j < n->y + n->height; j++)
+            {
+
+                mediaR += pixels[i][j].r;
+                mediaG += pixels[i][j].g;
+                mediaB += pixels[i][j].b;
+            }
+        }
+
+        mediaR = mediaR / (n->width * n->height);
+        mediaG = mediaG / (n->width * n->height);
+        mediaB = mediaB / (n->width * n->height);
+
+        // calcula o histograma da região
+
+        unsigned int histogram[256];
+
+        for (i = 0; i < 256; i++)
+        {
+            histogram[i] = 0;
+        }
+
+        for (i = n->x; i < n->x + n->width; i++)
+        {
+            for (j = n->y; j < n->y + n->height; j++)
+            {
+
+                unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
+
+                histogram[intensity] += 1;
+            }
+        }
+
+        // calcula nível de erro da região
+
+        // calcula intensidade média do quadrante utilizando o histograma
+
+        unsigned int soma = 0;
+        unsigned int totalPixels = n->width * n->height;
+
+        for (i = 0; i < 256; i++)
+        {
+            soma += histogram[i] * i;
+        }
+
+        unsigned int media = soma / totalPixels;
+
+        // calcula o erro
+
+        float erro = 0;
+
+        for (i = 0; i < 256; i++)
+        {
+            erro += histogram[i] * pow((i - media), 2);
+        }
+
+        erro = erro / totalPixels;
+
+        // se o erro for menor que o erro mínimo, então o quadrante é homogêneo
+
+        if (erro < minError)
+        {
+            n->color[0] = mediaR;
+            n->color[1] = mediaG;
+            n->color[2] = mediaB;
+
+            return n;
+        }
+        else
+        {
+            n->NW = desenhaQuadtree(newNode(n->x, n->y, meiaLargura, meiaAltura), minError, pixels);
+            n->NE = desenhaQuadtree(newNode(n->x + meiaLargura, n->y, meiaLargura, meiaAltura), minError, pixels);
+            n->SW = desenhaQuadtree(newNode(n->x, n->y + meiaAltura, meiaLargura, meiaAltura), minError, pixels);
+            n->SE = desenhaQuadtree(newNode(n->x + meiaLargura, n->y + meiaAltura, meiaLargura, meiaAltura), minError, pixels);
+        }
+
+        return n;
+    }
+}
+
 QuadNode *geraQuadtree(Img *pic, float minError)
 {
     // Converte o vetor RGBPixel para uma MATRIZ que pode acessada por pixels[linha][coluna]
@@ -41,10 +148,34 @@ QuadNode *geraQuadtree(Img *pic, float minError)
 
     int width = pic->width;
     int height = pic->height;
+    unsigned int totalPixels = width * height;
 
     //////////////////////////////////////////////////////////////////////////
     // Implemente aqui o algoritmo que gera a quadtree, retornando o nodo raiz
     //////////////////////////////////////////////////////////////////////////
+
+    // calcular a cor média da regiao (seção 3.4)
+
+    int mediaR = 0;
+    int mediaG = 0;
+    int mediaB = 0;
+
+    for (i = 0; i < width; i++)
+    {
+        for (j = 0; j < height; j++)
+        {
+
+            mediaR += pixels[i][j].r;
+            mediaG += pixels[i][j].g;
+            mediaB += pixels[i][j].b;
+        }
+    }
+
+    mediaR = mediaR / totalPixels;
+    mediaG = mediaG / totalPixels;
+    mediaB = mediaB / totalPixels;
+
+    // calcular o histograma da região (seção 3.2)
 
     unsigned int histogram[256];
 
@@ -58,22 +189,16 @@ QuadNode *geraQuadtree(Img *pic, float minError)
         for (j = 0; j < width; j++)
         {
 
-            // printf("\nBLUE %d \n RED %d \n GREEN %d\n", pixels[i][j].r, pixels[i][j].g, pixels[i][j].b);
-
             unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
 
-            // printf("\nGRAY: %d\n", intensity);
-
             histogram[intensity] += 1;
-            // printf("HISTOGRAM: \nindex: %d\n frequency: %d\n", intensity, histogram[intensity]);
         }
     }
 
-    // calcular intensidade do quadrante Para tanto,
-    // deve-se fazer um somatório de cada entrada do histograma multiplicada por sua frequência. A
-    // seguir, divide-se essa soma pelo total de pixels da região.
+    // calcular nível de errro da região (seção 3.3)
 
-    unsigned int totalPixels = width * height;
+    // calcular intensidade media do quadrante utilizando o histograma
+
     unsigned int soma = 0;
 
     for (i = 0; i < 256; i++)
@@ -83,8 +208,7 @@ QuadNode *geraQuadtree(Img *pic, float minError)
 
     int intensidadeMedia = soma / totalPixels;
 
-    printf("Intensidade Media: %d\n", intensidadeMedia);
-
+    // Calculo do erro conforme fórmula da seção 3.3
     long double erro = 0;
 
     for (i = 0; i < width; i++)
@@ -96,80 +220,84 @@ QuadNode *geraQuadtree(Img *pic, float minError)
         }
     }
 
-    printf("Erro antes calculo: %Lf\n", erro);
-    printf("Total Pixels: %d\n", totalPixels);
-
     long double totalPixelsDividido = 1.00000000 / totalPixels;
-
-    printf("Total Pixels Dividido: %.10Lf\n", totalPixelsDividido);
 
     long double totalPixelsVezesErro = totalPixelsDividido * erro;
 
-    printf("Total Pixels Vezes Erro: %.10Lf\n", totalPixelsVezesErro);
-
     long double erroRegiao = sqrt(totalPixelsVezesErro);
 
-    printf("Erro da região: %Lf\n", erroRegiao);
+    printf("erro regiao: %Lf \n", erroRegiao);
 
-    if (erro <= minError)
-    {
-        printf("Erro menor que minimo (mínimo: %f)\n", minError);
-        return newNode(0, 0, width, height);
-    }
+    // enquanto o erro da região for maior que o mínimo, divide a região em 4 quadrantes
 
     QuadNode *raiz = newNode(0, 0, width, height);
+
     raiz->status = PARCIAL;
-    raiz->color[0] = 0;
-    raiz->color[1] = 0;
-    raiz->color[2] = 255;
+    raiz->color[0] = mediaR;
+    raiz->color[1] = mediaG;
+    raiz->color[2] = mediaB;
 
     int meiaLargura = width / 2;
     int meiaAltura = height / 2;
 
-    QuadNode *nw = newNode(meiaLargura, 0, meiaLargura, meiaAltura);
-    nw->status = PARCIAL;
-    nw->color[0] = 0;
-    nw->color[1] = 0;
-    nw->color[2] = 255;
+    if (erroRegiao <= minError)
+    {
+        printf("Erro menor que minimo (mínimo: %f)\n", minError);
+        return newNode(0, 0, width, height);
+    }
+    else
+    {
 
-    raiz->NW = nw;
+        QuadNode *nw = newNode(meiaLargura, 0, meiaLargura, meiaAltura);
+        nw->status = PARCIAL;
+        nw->color[0] = mediaR;
+        nw->color[1] = mediaG;
+        nw->color[2] = mediaB;
 
-    // create the ne node
+        raiz->NW = nw;
 
-    QuadNode *ne = newNode(0, 0, meiaLargura, meiaAltura);
-    ne->status = PARCIAL;
-    ne->color[0] = 0;
-    ne->color[1] = 0;
-    ne->color[2] = 255;
+        // create the ne node
 
-    raiz->NE = ne;
+        QuadNode *ne = newNode(0, 0, meiaLargura, meiaAltura);
+        ne->status = PARCIAL;
+        ne->color[0] = mediaR;
+        ne->color[1] = mediaG;
+        ne->color[2] = mediaB;
 
-    // create the sw node
+        raiz->NE = ne;
 
-    QuadNode *sw = newNode(0, meiaAltura, meiaLargura, meiaAltura);
-    sw->status = PARCIAL;
-    sw->color[0] = 0;
-    sw->color[1] = 0;
-    sw->color[2] = 255;
+        // create the sw node
 
-    raiz->SW = sw;
+        QuadNode *sw = newNode(0, meiaAltura, meiaLargura, meiaAltura);
+        sw->status = PARCIAL;
+        sw->color[0] = mediaR;
+        sw->color[1] = mediaG;
+        sw->color[2] = mediaB;
 
-    // create the se node
+        raiz->SW = sw;
 
-    QuadNode *se = newNode(meiaLargura, meiaAltura, meiaLargura, meiaAltura);
-    se->status = PARCIAL;
-    se->color[0] = 0;
-    se->color[1] = 0;
-    se->color[2] = 255;
+        // create the se node
 
-    raiz->SE = se;
+        QuadNode *se = newNode(meiaLargura, meiaAltura, meiaLargura, meiaAltura);
+        se->status = PARCIAL;
+        se->color[0] = mediaR;
+        se->color[1] = mediaG;
+        se->color[2] = mediaB;
 
+        raiz->SE = se;
+
+        // chamada recursiva para cada quadrante
+
+        raiz->NW = desenhaQuadtree(nw, minError, pixels);
+        raiz->NE = desenhaQuadtree(ne, minError, pixels);
+        raiz->SW = desenhaQuadtree(sw, minError, pixels);
+        raiz->SE = desenhaQuadtree(se, minError, pixels);
+    }
     return raiz;
 }
 
 // COMENTE a linha abaixo quando seu algoritmo ja estiver funcionando
 // Caso contrario, ele ira gerar uma arvore de teste com 3 nodos
-
 // #define DEMO
 #ifdef DEMO
 
@@ -206,7 +334,7 @@ nw->NW = nw2;
 
 #endif
 // Finalmente, retorna a raiz da árvore
-
+// return raiz
 // Limpa a memória ocupada pela árvore
 void clearTree(QuadNode *n)
 {
