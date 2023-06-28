@@ -141,14 +141,8 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
         {
             double diferenca = pixels[i][j].r - intensidadeMedia;
             erro += pow(diferenca, 2);
-            if(n->id == 3000)
-            {
-                printf("erro: %f \n", erro);
-            }
         }
     }
-
-    // HERE BE DRAGONS (maybe we should change the image input to a single pixel array instead of rgb with same value)
 
     if(erro == 0)
     {
@@ -163,8 +157,6 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
 
     if (erroRegiao < minError)
     {
-        printf("erroRegiao menor que minError? %f \n", erroRegiao);
-        printf("Chegou ao erro minimo! %f  minErro %f \n", erroRegiao, minError);
         n->status = CHEIO;
         return n;
     }
