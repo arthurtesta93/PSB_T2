@@ -35,11 +35,9 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
 {
     // printf("ID: %d \n", n->id);
 
-    //transform img into grayscale
+    RGBPixel(*pixels)[pic->width] = (RGBPixel(*)[pic->height])pic->img;
 
-    RGBPixel(*pixels)[pic->width] = (RGBPixel(*)[pic->height])pic->img; 
-
-    int i,j;
+    int i, j;
 
     if (n == NULL)
         return NULL;
@@ -49,16 +47,25 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
         return newNode(0, 0, n->width, n->height);
     }
 
+    if (n->id == 1)
+    {
+        printf("width: %f \n", n->width);
+        printf("height: %f \n", n->height);
+    }
+
     float meiaLargura = n->width / 2;
     float meiaAltura = n->height / 2;
 
-    unsigned int totalPixels = n->width * n->height;
-
+    float totalPixels = n->width * n->height;
+    if (n->id == 1)
+    {
+        printf("totalPixels: %f \n", totalPixels);
+    }
     // calcula a cor média da região
 
-    int mediaR = 0;
-    int mediaG = 0;
-    int mediaB = 0;
+    float mediaR = 0;
+    float mediaG = 0;
+    float mediaB = 0;
 
     for (i = n->x; i < n->x + n->width; i++)
     {
@@ -75,6 +82,17 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
     mediaG = mediaG / totalPixels;
     mediaB = mediaB / totalPixels;
 
+    if (n->id == 1)
+    {
+        printf("mediaR: %f \n", mediaR);
+        printf("mediaG: %f \n", mediaG);
+        printf("mediaB: %f \n", mediaB);
+    }
+
+    n->color[0] = mediaR;
+    n->color[1] = mediaG;
+    n->color[2] = mediaB;
+
     // calcula o histograma da região
 
     unsigned int histogram[256];
@@ -88,9 +106,7 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
     {
         for (j = n->y; j < n->y + n->height; j++)
         {
-
             unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
-
             histogram[intensity] += 1;
         }
     }
@@ -105,34 +121,50 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
     {
         soma += histogram[i] * i;
     }
-
+    if (n->id == 1)
+    {
+        printf("soma: %d \n", soma);
+        printf("totalPixels: %f \n", totalPixels);
+    }
     int intensidadeMedia = soma / totalPixels;
 
-    n->color[0] = mediaR;
-    n->color[1] = mediaG;
-    n->color[2] = mediaB;
+    if (n->id == 1)
+    {
+        printf("intensidadeMedia: %d \n", intensidadeMedia);
+    }
     // Calculo do erro conforme fórmula da seção 3.3
-    long double erro = 0;
+    double erro = 0;
 
     for (i = 0; i < n->width; i++)
     {
         for (j = 0; j < n->height; j++)
         {
-            unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
-            erro += pow((intensity - intensidadeMedia), 2);
+            double diferenca = pixels[i][j].r - intensidadeMedia;
+            erro += pow(diferenca, 2);
+            if(n->id == 3000)
+            {
+                printf("erro: %f \n", erro);
+            }
         }
     }
 
-    long double totalPixelsDividido = 1.00000000 / totalPixels;
+    // HERE BE DRAGONS (maybe we should change the image input to a single pixel array instead of rgb with same value)
 
-    long double totalPixelsVezesErro = totalPixelsDividido * erro;
-
-    long double erroRegiao = sqrt(totalPixelsVezesErro);
-
-    // printf("erro regiao: %Lf \n", erroRegiao);
-    if (erro < minError)
+    if(erro == 0)
     {
-        // printf("Chegou ao erro minimo! %Lf  minErro %f \n", erro, minError);
+        printf("erro == 0 \n");
+        n->status = CHEIO;
+        return n;
+    }
+    double totalPixelsDividido = sqrt(1.0 / totalPixels);
+
+    printf("erro %f \n", sqrt(erro));
+    double erroRegiao = totalPixelsDividido * sqrt(erro);
+
+    if (erroRegiao < minError)
+    {
+        printf("erroRegiao menor que minError? %f \n", erroRegiao);
+        printf("Chegou ao erro minimo! %f  minErro %f \n", erroRegiao, minError);
         n->status = CHEIO;
         return n;
     }
@@ -177,20 +209,19 @@ QuadNode *geraQuadtree(Img *pic, float minError)
 
     RGBPixel(*graypixels)[grayImg->width] = (RGBPixel(*)[grayImg->height])grayImg->img;
 
-
     for (i = 0; i < grayImg->width; i++)
     {
         for (j = 0; j < grayImg->height; j++)
         {
             unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
 
-            //printf("intensity: %d \n", intensity);
+            // printf("intensity: %d \n", intensity);
             graypixels[i][j].r = intensity;
             graypixels[i][j].g = intensity;
             graypixels[i][j].b = intensity;
         }
     }
-    
+
     QuadNode *raiz = desenhaQuadtree(newNode(0, 0, width, height), minError, grayImg);
 
     return raiz;
