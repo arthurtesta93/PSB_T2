@@ -34,7 +34,7 @@ QuadNode *newNode(int x, int y, int width, int height)
 QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
 {
     // printf("ID: %d \n", n->id);
-    
+
     RGBPixel(*pixels)[pic->width] = (RGBPixel(*)[pic->height])pic->img;
 
     if (n == NULL)
@@ -44,110 +44,105 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
     {
         return newNode(0, 0, n->width, n->height);
     }
-    else
+    
+    float meiaLargura = n->width / 2;
+    float meiaAltura = n->height / 2;
+
+    unsigned int totalPixels = n->width * n->height;
+    int i, j;
+
+    // calcula a cor média da região
+
+    int mediaR = 0;
+    int mediaG = 0;
+    int mediaB = 0;
+
+    for (i = n->x; i < n->x + n->width; i++)
     {
-        float meiaLargura = n->width / 2;
-        float meiaAltura = n->height / 2;
-
-        unsigned int totalPixels = n->width * n->height;
-        int i, j;
-
-        // calcula a cor média da região
-
-        int mediaR = 0;
-        int mediaG = 0;
-        int mediaB = 0;
-
-        for (i = n->x; i < n->x + n->width; i++)
+        for (j = n->y; j < n->y + n->height; j++)
         {
-            for (j = n->y; j < n->y + n->height; j++)
-            {
 
-                mediaR += pixels[i][j].r;
-                mediaG += pixels[i][j].g;
-                mediaB += pixels[i][j].b;
-            }
+            mediaR += pixels[i][j].r;
+            mediaG += pixels[i][j].g;
+            mediaB += pixels[i][j].b;
         }
+    }
 
-        mediaR = mediaR / (n->width * n->height);
-        mediaG = mediaG / (n->width * n->height);
-        mediaB = mediaB / (n->width * n->height);
+    mediaR = mediaR / totalPixels;
+    mediaG = mediaG / totalPixels;
+    mediaB = mediaB / totalPixels;
 
-        // calcula o histograma da região
+    // calcula o histograma da região
 
-        unsigned int histogram[256];
+    unsigned int histogram[256];
 
-        for (i = 0; i < 256; i++)
+    for (i = 0; i < 256; i++)
+    {
+        histogram[i] = 0;
+    }
+
+    for (i = n->x; i < n->x + n->width; i++)
+    {
+        for (j = n->y; j < n->y + n->height; j++)
         {
-            histogram[i] = 0;
-        }
 
-        for (i = n->x; i < n->x + n->width; i++)
+            unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
+
+            histogram[intensity] += 1;
+        }
+    }
+
+    // calcula nível de erro da região
+
+    // calcula intensidade média do quadrante utilizando o histograma
+
+    unsigned int soma = 0;
+
+    for (i = 0; i < 256; i++)
+    {
+        soma += histogram[i] * i;
+    }
+
+    int intensidadeMedia = soma / totalPixels;
+
+    n->color[0] = mediaR;
+    n->color[1] = mediaG;
+    n->color[2] = mediaB;
+    // Calculo do erro conforme fórmula da seção 3.3
+    long double erro = 0;
+
+    for (i = 0; i < n->width; i++)
+    {
+        for (j = 0; j < n->height; j++)
         {
-            for (j = n->y; j < n->y + n->height; j++)
-            {
-
-                unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
-
-                histogram[intensity] += 1;
-            }
+            unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
+            erro += pow((intensity - intensidadeMedia), 2);
         }
+    }
 
-        // calcula nível de erro da região
+    long double totalPixelsDividido = 1.00000000 / totalPixels;
 
-        // calcula intensidade média do quadrante utilizando o histograma
+    long double totalPixelsVezesErro = totalPixelsDividido * erro;
 
-        unsigned int soma = 0;
+    long double erroRegiao = sqrt(totalPixelsVezesErro);
 
-        for (i = 0; i < 256; i++)
-        {
-            soma += histogram[i] * i;
-        }
-
-        int intensidadeMedia = soma / totalPixels;
-
-        n->color[0] = mediaR;
-        n->color[1] = mediaG;
-        n->color[2] = mediaB;
-        // Calculo do erro conforme fórmula da seção 3.3
-        long double erro = 0;
-
-        for (i = 0; i < n->width; i++)
-        {
-            for (j = 0; j < n->height; j++)
-            {
-                unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
-                erro += pow((intensity - intensidadeMedia), 2);
-            }
-        }
-
-        long double totalPixelsDividido = 1.00000000 / totalPixels;
-
-        long double totalPixelsVezesErro = totalPixelsDividido * erro;
-
-        long double erroRegiao = sqrt(totalPixelsVezesErro);
-
-        // printf("erro regiao: %Lf \n", erroRegiao);
-        if (erro < minError)
-        {
-            // printf("Chegou ao erro minimo! %Lf  minErro %f \n", erro, minError);
-            n->color[0] = mediaR;
-            n->color[1] = mediaG;
-            n->color[2] = mediaB;
-            n->status = CHEIO;
-            return n;
-        }
-        else
-        {
-            n->status = PARCIAL;
-            n->NW = desenhaQuadtree(newNode(n->x, n->y, meiaLargura, meiaAltura), minError, pic);
-            n->NE = desenhaQuadtree(newNode(n->x + meiaLargura, n->y, meiaLargura, meiaAltura), minError, pic);
-            n->SW = desenhaQuadtree(newNode(n->x, n->y + meiaAltura, meiaLargura, meiaAltura), minError, pic);
-            n->SE = desenhaQuadtree(newNode(n->x + meiaLargura, n->y + meiaAltura, meiaLargura, meiaAltura), minError, pic);
-        }
-
+    // printf("erro regiao: %Lf \n", erroRegiao);
+    if (erro < minError)
+    {
+        // printf("Chegou ao erro minimo! %Lf  minErro %f \n", erro, minError);
+        n->status = CHEIO;
         return n;
     }
+    else
+    {
+        n->status = PARCIAL;
+        n->NW = desenhaQuadtree(newNode(n->x, n->y, meiaLargura, meiaAltura), minError, pic);
+        n->NE = desenhaQuadtree(newNode(n->x + meiaLargura, n->y, meiaLargura, meiaAltura), minError, pic);
+        n->SW = desenhaQuadtree(newNode(n->x, n->y + meiaAltura, meiaLargura, meiaAltura), minError, pic);
+        n->SE = desenhaQuadtree(newNode(n->x + meiaLargura, n->y + meiaAltura, meiaLargura, meiaAltura), minError, pic);
+    }
+
+    return n;
 }
 
 QuadNode *geraQuadtree(Img *pic, float minError)
@@ -247,9 +242,6 @@ QuadNode *geraQuadtree(Img *pic, float minError)
     QuadNode *raiz = newNode(0, 0, width, height);
 
     raiz->status = PARCIAL;
-    raiz->color[0] = mediaR;
-    raiz->color[1] = mediaG;
-    raiz->color[2] = mediaB;
 
     int meiaLargura = width / 2;
     int meiaAltura = height / 2;
@@ -264,9 +256,9 @@ QuadNode *geraQuadtree(Img *pic, float minError)
 
         QuadNode *nw = newNode(meiaLargura, 0, meiaLargura, meiaAltura);
         nw->status = PARCIAL;
-        nw->color[0] = mediaR;
-        nw->color[1] = mediaG;
-        nw->color[2] = mediaB;
+        //        nw->color[0] = mediaR;
+        //        nw->color[1] = mediaG;
+        //        nw->color[2] = mediaB;
 
         raiz->NW = nw;
 
@@ -274,9 +266,9 @@ QuadNode *geraQuadtree(Img *pic, float minError)
 
         QuadNode *ne = newNode(0, 0, meiaLargura, meiaAltura);
         ne->status = PARCIAL;
-        ne->color[0] = mediaR;
-        ne->color[1] = mediaG;
-        ne->color[2] = mediaB;
+        //        ne->color[0] = mediaR;
+        //        ne->color[1] = mediaG;
+        //        ne->color[2] = mediaB;
 
         raiz->NE = ne;
 
@@ -284,9 +276,9 @@ QuadNode *geraQuadtree(Img *pic, float minError)
 
         QuadNode *sw = newNode(0, meiaAltura, meiaLargura, meiaAltura);
         sw->status = PARCIAL;
-        sw->color[0] = mediaR;
-        sw->color[1] = mediaG;
-        sw->color[2] = mediaB;
+        //        sw->color[0] = mediaR;
+        //        sw->color[1] = mediaG;
+        //        sw->color[2] = mediaB;
 
         raiz->SW = sw;
 
@@ -294,9 +286,9 @@ QuadNode *geraQuadtree(Img *pic, float minError)
 
         QuadNode *se = newNode(meiaLargura, meiaAltura, meiaLargura, meiaAltura);
         se->status = PARCIAL;
-        se->color[0] = mediaR;
-        se->color[1] = mediaG;
-        se->color[2] = mediaB;
+        //        se->color[0] = mediaR;
+        //        se->color[1] = mediaG;
+        //        se->color[2] = mediaB;
 
         raiz->SE = se;
 
