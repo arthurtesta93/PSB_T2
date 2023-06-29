@@ -73,9 +73,11 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
     mediaG = mediaG / totalPixels;
     mediaB = mediaB / totalPixels;
 
-    n->color[0] = mediaR;
-    n->color[1] = mediaG;
-    n->color[2] = mediaB;
+    float mediaCores = (mediaR + mediaG + mediaB) / 3;
+
+    n->color[0] = mediaCores;
+    n->color[1] = mediaCores;
+    n->color[2] = mediaCores;
 
     // calcula o histograma da região
 
