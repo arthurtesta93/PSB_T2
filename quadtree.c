@@ -33,7 +33,6 @@ QuadNode *newNode(int x, int y, int width, int height)
 
 QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
 {
-    // printf("ID: %d \n", n->id);
 
     RGBPixel(*pixels)[pic->width] = (RGBPixel(*)[pic->height])pic->img;
 
@@ -127,13 +126,9 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
         n->status = CHEIO;
         return n;
     }
-    double totalPixelsDividido = sqrt(1.0 / totalPixels);
+    double totalPixelsDividido = erro / totalPixels;
+    double erroRegiao = sqrt(totalPixelsDividido);
 
-    //totalPixelsDividido = 1 / totalPixelsDividido;
-
-    double erroRegiao = totalPixelsDividido * sqrt(erro);
-
-    printf("Erro: %f \n", erroRegiao);
     if (erroRegiao < minError)
     {
         n->status = CHEIO;
