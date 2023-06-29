@@ -129,8 +129,11 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
     }
     double totalPixelsDividido = sqrt(1.0 / totalPixels);
 
+    //totalPixelsDividido = 1 / totalPixelsDividido;
+
     double erroRegiao = totalPixelsDividido * sqrt(erro);
 
+    printf("Erro: %f \n", erroRegiao);
     if (erroRegiao < minError)
     {
         n->status = CHEIO;
