@@ -47,20 +47,11 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
         return newNode(0, 0, n->width, n->height);
     }
 
-    if (n->id == 1)
-    {
-        printf("width: %f \n", n->width);
-        printf("height: %f \n", n->height);
-    }
-
     float meiaLargura = n->width / 2;
     float meiaAltura = n->height / 2;
 
     float totalPixels = n->width * n->height;
-    if (n->id == 1)
-    {
-        printf("totalPixels: %f \n", totalPixels);
-    }
+
     // calcula a cor média da região
 
     float mediaR = 0;
@@ -81,13 +72,6 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
     mediaR = mediaR / totalPixels;
     mediaG = mediaG / totalPixels;
     mediaB = mediaB / totalPixels;
-
-    if (n->id == 1)
-    {
-        printf("mediaR: %f \n", mediaR);
-        printf("mediaG: %f \n", mediaG);
-        printf("mediaB: %f \n", mediaB);
-    }
 
     n->color[0] = mediaR;
     n->color[1] = mediaG;
@@ -121,17 +105,9 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
     {
         soma += histogram[i] * i;
     }
-    if (n->id == 1)
-    {
-        printf("soma: %d \n", soma);
-        printf("totalPixels: %f \n", totalPixels);
-    }
+
     int intensidadeMedia = soma / totalPixels;
 
-    if (n->id == 1)
-    {
-        printf("intensidadeMedia: %d \n", intensidadeMedia);
-    }
     // Calculo do erro conforme fórmula da seção 3.3
     double erro = 0;
 
@@ -146,13 +122,11 @@ QuadNode *desenhaQuadtree(QuadNode *n, float minError, Img *pic)
 
     if(erro == 0)
     {
-        printf("erro == 0 \n");
         n->status = CHEIO;
         return n;
     }
     double totalPixelsDividido = sqrt(1.0 / totalPixels);
 
-    printf("erro %f \n", sqrt(erro));
     double erroRegiao = totalPixelsDividido * sqrt(erro);
 
     if (erroRegiao < minError)
@@ -207,7 +181,6 @@ QuadNode *geraQuadtree(Img *pic, float minError)
         {
             unsigned int intensity = (pixels[i][j].r * RED_FACTOR) + (pixels[i][j].g * GREEN_FACTOR) + (pixels[i][j].b * BLUE_FACTOR);
 
-            // printf("intensity: %d \n", intensity);
             graypixels[i][j].r = intensity;
             graypixels[i][j].g = intensity;
             graypixels[i][j].b = intensity;
